@@ -94,13 +94,11 @@ class HighOrderMap:
             y = -y
         return y
 
-    def k4(self, t):
+    def mapToHighOrderPointOnCurve(self, t):
         """
-        https://datatracker.ietf.org/doc/html/draft-ietf-lwig-curve-representations-23#appendix-K.4
-        Return a curve point in a prime order subgroup from the element t in the
-        finite field
-
-        t can already be an element of F or an integer
+        Return a curve point in a prime order subgroup from the element t in F.
+        t can already be an element of F or an integer.
+        t must not be a square in F.
         """
 
         s = 0 # TODO: Does it matter what this binary digit is?
@@ -113,66 +111,21 @@ class HighOrderMap:
         assert A != 0 and B != 0, "This mapping does not work when either curve parameter is 0"
         assert not t.is_square(), "This mapping cannot map elements that are squares in the finite field"
 
-        if t != -1:
-            pt = self.k3(t)
-            # we know p0, p0 + P(t), p0 - P(t) are all in the large subgroup
-            # whatever t is given it is != 1 and non-square in F
-
-            # get x, y coordinates of the point P(t) returned by k3
-            try:
-                x, y = pt.xy()
-            except ZeroDivisionError as e:
-                logging.error("Point at infinity obtained from k3!")
-                raise e
-
-            # get x, y coordinates of P0
-            try:
-                x0, y0 = self.p0.xy()
-            except ZeroDivisionError as e:
-                logging.error("P0 is point at infinity!")
-                raise e
-
-            if sgn0(y0*y) == s:
-                return self.p0 + pt
-            else:
-                return self.p0 - pt
-
-        # t = -1 (and -1 is not a square by assert above)
-        else:
+        if t == -1:
             return self.p0
 
-    def k3(self, t):
-        """
-        https://datatracker.ietf.org/doc/html/draft-ietf-lwig-curve-representations-23#appendix-K.3
-        Map an element t in F that is not a square in F to a point of a
-        Weierstrass curve if neither domain parameter is zero.
-
-        t can already be an element of F or an integer
-
-        Returns a point on the curve
-        """
-
-        F = self.F
-        A = self.A
-        B = self.B
-        t = F(t)
-
-        assert A != 0 and B != 0, "This mapping does not work when either curve parameter is 0"
-        assert not t.is_square(), "This mapping cannot map elements that are squares in the finite field"
-
-        if t != -1:
-
-            x = (-B/A)*(1+1/(t+t**2))
+        # if t != -1, run K.3 mapping to get point P(t)
+        x = (-B/A)*(1+1/(t+t**2))   # unique solution to f(t*x) = t^3 * f(x)
+        fx = self.f(x)
+        if not fx.is_square():      # if f(x) is not a square then f(t*x) is
+            x = t*x
             fx = self.f(x)
-            if fx.is_square():
-                return self.curve(x, self.sqrt(fx))
-            else:
-                x_prime = t*x
-                fx_prime = self.f(x_prime)
-                return self.curve(x_prime, self.sqrt(fx_prime))
+        y = self.sqrt(fx)           # corresponding y is sqrt(f(x))
+        pt = self.curve(x, y)       # create curve point object
 
-        # t = -1 (and -1 is not a square by assert above)
+        # choose the point in the large subgroup to return according to the
+        # sign of the product of the y coordinates of P0 and P(t)
+        if sgn0(self.p0y * y) == s:
+            return self.p0 + pt
         else:
-            # can map to point at infinity or P0 (if suitable) see note 1
-            # return self.curve(0, 1, 0) # TODO: THINK this is identity
-            return self.p0 # TODO: suitable?
+            return self.p0 - pt
