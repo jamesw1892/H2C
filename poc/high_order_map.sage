@@ -53,7 +53,8 @@ class HighOrderMap:
 
         Any of the following can be integers or already elements of F
         A, B: Curve domain parameters such that curve equation is y^2 = x^3 + A*x + B
-        p0x, p0y: coordinates of p0 for this curve
+        p0x, p0y: coordinates of p0 for this curve. p0y can be None and it will
+        be calculated from p0x as the "non-negative" sqrt of x^3 + A*x + B
         non_square: non-square element of F
         """
 
@@ -63,21 +64,28 @@ class HighOrderMap:
         # if they are already elements of F this does nothing
         self.A = F(A)
         self.B = F(B)
-        self.p0x = F(p0x)
-        self.p0y = F(p0y)
-        self.non_square = F(non_square)
 
         # verify curve domain parameters
         assert A != 0 and B != 0, "This mapping does not work when either curve parameter is 0"
+
+        # calculates RHS of curve equation
+        self.f = lambda x: x**3 + A*x + B
+
+        self.p0x = F(p0x)
+
+        # if p0y is not specified, calculate it as the "non-negative" y
+        # satisfying the curve equation. TODO: check this is even y
+        if p0y is None:
+            p0y = self.sqrt(self.f(p0x))
+        self.p0y = F(p0y)
+
+        self.non_square = F(non_square)
 
         # create elliptic curve object with sage over F with domain parameters A, B
         self.curve = EllipticCurve(F, [A, B])
 
         # create elliptic curve point object with sage for P0
         self.p0 = self.curve(self.p0x, self.p0y)
-
-        # calculates RHS of curve equation
-        self.f = lambda x: x**3 + A*x + B
 
         # save to static class attribute so it can be easily retrieved by name
         HighOrderMap.maps[name] = self
