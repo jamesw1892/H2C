@@ -1,5 +1,5 @@
 """
-Implementation of Appendices K.3.1 and K.4.1 of the IETF LWIG's Curve
+Implementation of Appendices K.3.1, K.4.1 and K.6 of the IETF LWIG's Curve
 Representations Draft:
 https://datatracker.ietf.org/doc/html/draft-ietf-lwig-curve-representations-23
 
@@ -14,8 +14,11 @@ to E(F).
 Appendix K.4 uses the mapping in appendix K.3 to map an element t in F that is
 not a square in F to G.
 
+Appendix K.6 describes how to extend the mappings in K.3 and K.4 to any element
+t in F (not necessarily a non-square).
+
 This replaces the map_to_curve and clear_cofactor stages of the hash-to-curve
-draft since it maps directly to G. However it's domain is only non-squares in F.
+draft since it maps directly to G.
 
 It also requires the domain parameters to be non-zero, however note 2 in
 appendix K.3.1 states that it is often possible to find an isogenous curve
@@ -87,6 +90,9 @@ class HighOrderMap:
         # create elliptic curve point object with sage for P0
         self.p0 = self.curve(self.p0x, self.p0y)
 
+        # by default, set p1 to p0
+        self.p1 = self.p0
+
         # save to static class attribute so it can be easily retrieved by name
         HighOrderMap.maps[name] = self
 
@@ -106,7 +112,6 @@ class HighOrderMap:
         """
         Return a curve point in a prime order subgroup from the element t in F.
         t can already be an element of F or an integer.
-        t must not be a square in F.
         """
 
         s = 0 # TODO: Does it matter what this binary digit is?
@@ -117,7 +122,13 @@ class HighOrderMap:
         t = F(t)
 
         assert A != 0 and B != 0, "This mapping does not work when either curve parameter is 0"
-        assert not t.is_square(), "This mapping cannot map elements that are squares in the finite field"
+
+        # K.6: map 0 to this curve-specific high-order point, p1
+        if t == 0:
+            return self.p1
+
+        # K.6: make t a non-square
+        t = self.non_square * t**2
 
         if t == -1:
             return self.p0
