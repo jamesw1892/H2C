@@ -247,5 +247,22 @@ class HighOrderMap:
 
         return self.k4(self.delta * u**2, s)
 
+    def k5(self, u1, s1, u2, s2):
+        """
+        https://datatracker.ietf.org/doc/html/draft-ietf-lwig-curve-representations-23#appendix-K.5
+        Return a uniform curve point from elements u1, u2 in F and binary digits
+        s1, s2.
+        
+        Note that despite using K.6 with K.4, this can produce a point in the
+        small subgroup because the points produced by k6 may be in a coset of
+        the largest prime subgroup rather than it itself.
+
+        u1 and u2 can already be an element of F or integers.
+
+        This uses K.6 (the version that uses K.4)
+        """
+
+        return self.k6(u1, s1) - self.k6(u2, s2)
+
     def verifyDelta(self, delta):
         assert not delta.is_square(), "Delta is a square in F!"
