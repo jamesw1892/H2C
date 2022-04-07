@@ -246,3 +246,6 @@ class HighOrderMap:
             return self.P1
 
         return self.k4(self.delta * u**2, s)
+
+    def verifyDelta(self, delta):
+        assert not delta.is_square(), "Delta is a square in F!"
