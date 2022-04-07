@@ -136,11 +136,14 @@ class HighOrderMap:
         # if t != -1, run K.3 mapping to get point P(t)
         x = (-B/A)*(1+1/(t+t**2))   # unique solution to f(t*x) = t^3 * f(x)
         fx = self.f(x)
-        if not fx.is_square():      # if f(x) is not a square then f(t*x) is
+        if fx.is_square():
+            y = self.sqrt(fx)
+        else:                       # if f(x) is not a square then f(t*x) is
             x = t*x
-            fx = self.f(x)
-        y = self.sqrt(fx)           # corresponding y is sqrt(f(x))
-        pt = self.curve(x, y)       # create curve point object
+            y = -self.sqrt(self.f(x))
+
+        # create curve point object
+        pt = self.curve(x, y)
 
         # choose the point in the large subgroup to return according to the
         # sign of the product of the y coordinates of P0 and P(t)
