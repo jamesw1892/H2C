@@ -1,38 +1,40 @@
 """
-Implementation of Appendices K.3.1, K.4.1 and K.6 of the IETF LWIG's Curve
+Implementation of Appendices K.3.1, K.4.1, K.5 and K.6 of the IETF LWIG's Curve
 Representations Draft:
 https://datatracker.ietf.org/doc/html/draft-ietf-lwig-curve-representations-23
 
-Given a Finite Field F and an Elliptic Curve E over F with non-zero domain
-paramters, IE the curve equation is y^2 = f(x) = x^3 + A*x + B for A, B in
-F\{0}. Let E(F) be the group of points on E (including the point at infinity).
-Let G be the (sub)group of E(F) of largest prime order.
+Given a integer field size q, and non-zero integers a and b, we define the
+finite field F of size q and the elliptic curve E over F with Weierstrass
+equation y^2 = f(x) = x^3 + a*x + b where a and b are transformed into elements
+of F. Let E(F) be the group of points on E (including the point at infinity).
 
-Appendix K.3 describes how to map an element t in F that is not a square in F
-to E(F).
+Appendix K.3 describes how to map an element t in F where t is not a square in
+F to some point in E(F) (not necessarily a high-order point).
 
-Appendix K.4 uses the mapping in appendix K.3 to map an element t in F that is
-not a square in F to G.
+Appendix K.4 describes how to use K.3 to map an element t in F where t is not a
+square in F to some high-order point in E(F).
 
-Appendix K.6 describes how to extend the mappings in K.3 and K.4 to any element
-t in F (not necessarily a non-square).
+Appendix K.6 describes how to extend the mappings in K.3 or K.4 to take as
+input any element u in F (not necessarily a non-square).
 
-This replaces the map_to_curve and clear_cofactor stages of the hash-to-curve
-draft since it maps directly to G.
+Only about 3/8 of the points in E(F) can be mapped to with the above mappings.
+Appendix K.5 describes how to extend them to produce a distribution that is
+statistically indistinguishable from the uniform distribution over E(F).
+However, this loses guarantee of K.4 to not map to a point in a small subgroup.
 
-It also requires the domain parameters to be non-zero, however note 2 in
-appendix K.3.1 states that it is often possible to find an isogenous curve
-with non-zero domain parameters over the same field F. Then non-square elements
-of F can be mapped this isogenous curve and further mapped to the original
-curve using the isogeny.
+These require the domain parameters to be non-zero, however note 2 in appendix
+K.3.1 states that it is often possible to find an isogenous curve with non-zero
+domain parameters over the same field F. Then non-square elements of F can be
+mapped this isogenous curve and further mapped to the original curve using the
+isogeny.
 TODO: Look at isogeny maps in H2C appendix E
 
 The parity function in appendix H is also mentioned which assigns a sign to
 elements of F - returns 1 iff the element is "negative" in F (so par(0) = 0).
 Pseudocode for the same function is provided in the hash-to-curve draft:
 https://www.ietf.org/archive/id/draft-irtf-cfrg-hash-to-curve-14.html#name-the-sgn0-function
-And this is implemented in constant time in the `sgn0` function of `common.sage`
-so we use this.
+And this is implemented in constant time in the `sgn0` function of
+`common.sage` so we use this.
 """
 
 import logging
@@ -43,58 +45,103 @@ try:
 except ImportError as e:
     sys.exit("Error loading preprocessed sage files. Try running `make clean pyfiles`. Full error: " + e)
 
-# logging format - log everything and add 'HighOrderMap' to front of messages
+# logging format - log everything except debug and add 'HighOrderMap' to front of messages
 logging.basicConfig(level=logging.INFO, format="HighOrderMap %(levelname)s: %(message)s")
 
 class HighOrderMap:
-    maps = dict()
+    """
+    GENERAL ATTRIBUTES:
 
-    def __init__(self, name: str, F, A, B, p0x, p0y, non_square):
+    q (int): Field size, prime power
+    a (int): Coefficient of x in Weierstrass curve equation
+    b (int): Constant in Weierstrass curve equation
+    h (int): Cofactor of the curve
+    F: Finite Field object from Sage created with GF(q)
+    curve: Elliptic Curve object from Sage created with EllipticCurve(.)
+    f (int -> int): Calculates the RHS of the Weierstrass curve equation given x
+    identity: Elliptic curve point object from Sage that is the point at infinity,
+    the identity element of the group of points
+
+    HIGH ORDER CONSTRUCTION ATTRIBUTES:
+
+    delta (F): A non-square element of F
+    P0: A point in curve where none of P0, P0+P(t), nor P0-P(t) are in the
+    smallest subgroup for any non-square t != -1 and where P is K.3.1
+    P0x (F): x coordinate of P0, element of the field F
+    P0y (F): y coordinate of P0, element of the field F
+    P1: A point in the largest subgroup of the curve
+    P2: A point in the largest subgroup of the curve
+    """
+
+    def __init__(self, q: int, a: int, b: int, h: int, P0x: int, P0y: int=None, delta: int=None):
         """
-        Name: Curve name
-        F: Finite field the curve is defined over (must be element of GF(q) for some q)
+        Calculate things about the curve with field size q, Weierstrass
+        curve coefficients a and b, and cofactor h.
 
-        Any of the following can be integers or already elements of F
-        A, B: Curve domain parameters such that curve equation is y^2 = x^3 + A*x + B
-        p0x, p0y: coordinates of p0 for this curve. p0y can be None and it will
-        be calculated from p0x as the "non-negative" sqrt of x^3 + A*x + B
-        non_square: non-square element of F
+        q must be a prime power otherwise ValueError will be thrown.
+
+        NOTE: the high order constructions require a != 0 and b != 0 so instead
+        use an isogenous curve and input its a and b here, then map the output
+        point to the original curve using the isogeny.
+
+        - P0x: the x coordinate of P0
+
+        Optionally provide (if not provided, will calculate):
+        - delta: a non-square element of the of size q
+        - P0y: the y coordinate of P0
+
+        Where neither P0, P0 + P(t), nor P0 - P(t) are in a small subgroup for
+        any non-square t in the field of size q and P(t) is the K.3 mapping.
         """
 
-        self.name = name
-        self.F = F
-
-        # if they are already elements of F this does nothing
-        self.A = F(A)
-        self.B = F(B)
+        self.q = q
+        self.F = GF(q)
+        self.a = self.F(a)
+        self.b = self.F(b)
 
         # verify curve domain parameters
-        assert A != 0 and B != 0, "This mapping does not work when either curve parameter is 0"
+        assert self.a != 0 and self.b != 0, "This mapping does not work when either curve parameter is 0"
 
-        # calculates RHS of curve equation
-        self.f = lambda x: x**3 + A*x + B
+        self.h = h
+        self.curve = EllipticCurve(self.F, [a, b])
 
-        self.p0x = F(p0x)
+        self.identity = self.curve(0, 1, 0)
 
-        # if p0y is not specified, calculate it as the "non-negative" y
-        # satisfying the curve equation. TODO: check this is even y
-        if p0y is None:
-            p0y = self.sqrt(self.f(p0x))
-        self.p0y = F(p0y)
+        # curve equation RHS
+        self.f = lambda x: x**3 + self.a * x + self.b
 
-        self.non_square = F(non_square)
+        # calculate delta if not provided
+        if delta is None:
+            self.delta = self.pickDelta()
 
-        # create elliptic curve object with sage over F with domain parameters A, B
-        self.curve = EllipticCurve(F, [A, B])
+        # otherwise check valid
+        else:
+            self.delta = self.F(delta)
+            self.verifyDelta(self.delta)
 
-        # create elliptic curve point object with sage for P0
-        self.p0 = self.curve(self.p0x, self.p0y)
+        self.P0x = self.F(P0x)
 
-        # by default, set p1 to p0
-        self.p1 = self.p0
+        # if y coordinate not provided, calculate from x
+        # TODO: check y is even
+        if P0y is None:
+            P0y = self.sqrt(self.f(P0x))
 
-        # save to static class attribute so it can be easily retrieved by name
-        HighOrderMap.maps[name] = self
+        self.P0y = self.F(P0y)
+        self.P0 = self.curve(self.P0x, self.P0y)
+
+        # for now set all equal, TODO: potentially change
+        self.P2 = self.P1 = self.P0
+
+    def pickDelta(self):
+        """
+        Return a non-square element of the field
+        """
+
+        # about half are non-square so certainly exists
+        # brute force
+        for e in self.F:
+            if not e.is_square():
+                return e
 
     def sqrt(self, x):
         """
@@ -102,52 +149,100 @@ class HighOrderMap:
 
         x can be an int or element of F
         """
-        assert self.F(x).is_square(), "Must be a square to find sqrt"
-        y = self.F(x).sqrt(extend=False) # sage function sqrt
+
+        # make x an element of F
+        x = self.F(x)
+
+        assert x.is_square(), "Must be a square to find sqrt"
+        y = x.sqrt(extend=False) # sage function sqrt
         if sgn0(y) == 1:
             y = -y
         return y
 
-    def mapToHighOrderPointOnCurve(self, t):
+    def k3(self, t):
         """
-        Return a curve point in a prime order subgroup from the element t in F.
-        t can already be an element of F or an integer.
+        https://datatracker.ietf.org/doc/html/draft-ietf-lwig-curve-representations-23#appendix-K.3
+        Return a curve point from an element t in F that is not a square in F.
+        Neither domain parameter in the curve's Weierstrass equation can be zero.
+
+        t can already be an element of F or an integer
         """
 
-        s = 0 # TODO: Does it matter what this binary digit is?
+        t = self.F(t)
 
-        F = self.F
-        A = self.A
-        B = self.B
-        t = F(t)
+        assert not t.is_square(), "This mapping cannot map elements that are squares in the finite field"
 
-        assert A != 0 and B != 0, "This mapping does not work when either curve parameter is 0"
-
-        # K.6: map 0 to this curve-specific high-order point, p1
-        if t == 0:
-            return self.p1
-
-        # K.6: make t a non-square
-        t = self.non_square * t**2
-
+        # K.4 never calls with t = -1
         if t == -1:
-            return self.p0
+            return self.identity
 
-        # if t != -1, run K.3 mapping to get point P(t)
-        x = (-B/A)*(1+1/(t+t**2))   # unique solution to f(t*x) = t^3 * f(x)
+        # unique solution to f(t*x) = t^3 * f(x)
+        x = -(self.b/self.a)*(1+1/(t+t**2))
+
         fx = self.f(x)
         if fx.is_square():
             y = self.sqrt(fx)
-        else:                       # if f(x) is not a square then f(t*x) is
+
+        # if f(x) is not a square then f(t*x) is
+        else:
             x = t*x
             y = -self.sqrt(self.f(x))
 
         # create curve point object
-        pt = self.curve(x, y)
+        return self.curve(x, y)
 
-        # choose the point in the large subgroup to return according to the
-        # sign of the product of the y coordinates of P0 and P(t)
-        if sgn0(self.p0y * y) == s:
-            return self.p0 + pt
+    def k4(self, t, s):
+        """
+        https://datatracker.ietf.org/doc/html/draft-ietf-lwig-curve-representations-23#appendix-K.4
+        Return a high-order curve point from the non-square element
+        t in F and binary digit s.
+
+        Note this could be in the largest subgroup, or another coset. It has
+        either the largest prime order or the same order as the whole group.
+
+        t can already be an element of F or an integer
+        """
+
+        assert s == 0 or s == 1, "s must be a binary digit"
+
+        t = self.F(t)
+
+        if t == -1:
+            return self.P0
+
+        Pt = self.k3(t)
+        # we know P0, P0 + P(t), P0 - P(t) are not in a small subgroup
+        # whatever t is given it is != 1 and non-square in F
+
+        # get x, y coordinates of the point P(t) returned by k3
+        try:
+            Ptx, Pty = Pt.xy()
+        except ZeroDivisionError as e:
+            logging.error("Point at infinity obtained from k3!")
+            raise e
+
+        if sgn0(self.P0y * Pty) == s:
+            return self.P0 + Pt
         else:
-            return self.p0 - pt
+            return self.P0 - Pt
+
+    def k6(self, u, s):
+        """
+        https://datatracker.ietf.org/doc/html/draft-ietf-lwig-curve-representations-23#appendix-K.6
+        Return a curve point not in the small subgroup from the element u in F
+        and binary digit s.
+
+        Note this could be in the largest subgroup, or another coset. It has
+        either the largest prime order or the same order as the whole group.
+
+        u can already be an element of F or an integer.
+
+        This uses K.4 (not just K.3)
+        """
+
+        u = self.F(u)
+
+        if u == 0:
+            return self.P1
+
+        return self.k4(self.delta * u**2, s)
