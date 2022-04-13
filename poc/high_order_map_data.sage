@@ -1,6 +1,44 @@
 """
 Stores details from Table 1 of the IETF LWIG's Curve Representations Draft:
 https://datatracker.ietf.org/doc/html/draft-ietf-lwig-curve-representations-23
+to create instances of the high-order map for different curves. For each curve,
+the following attributes are required:
+
+- q (int): The size of the curve's underlying field, must be a prime power
+- a (int): The coefficient of x in the curve's Weierstrass equation, must not be 0
+- b (int): The constant coefficient in the curve's Weierstrass equation, must not be 0
+- h (int): The cofactor of the curve h = |E(F)|/|G| where E(F) is the group of
+    points on the elliptic curve and G is the largest subgroup of E(F) with prime order
+- P0x (int): The x-coordinate of the point P0 of the curve
+- P0y (int or None): The y-coordinate of the point P0 on the curve.
+    If None, will be calculated from x
+- delta (int or None): A non-square element of the curve's underlying field.
+    If None, any such element will be chosen.
+
+P0 is a point on the curve where none of P0, P0 + P(t), nor P0 - P(t) are in
+the smallest subgroup of the curve for any non-square element t of the
+underlying field where t != -1 and P is the function specified by appendix
+K.3.1 of the Curve Representations Draft and implemented in high_order_map.sage
+
+These values are stored and the high-order map instances are created for the
+following curves:
+
+- NIST P-224
+- NIST P-256
+- NIST P-384
+- NIST P-521
+- Brainpool P224r1
+- Brainpool P256r1
+- Brainpool P320r1
+- Brainpool P384r1
+- Brainpool P512r1
+- Wei25519
+- Wei25519.2
+- Wei25519.-3
+- Wei448
+- Wei448.1
+- Wei448.-3
+- secp256k1.m
 """
 
 import sys
