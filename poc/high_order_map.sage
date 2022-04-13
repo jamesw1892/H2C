@@ -122,7 +122,6 @@ class HighOrderMap:
         self.P0x = self.F(P0x)
 
         # if y coordinate not provided, calculate from x
-        # TODO: check y is even
         if P0y is None:
             P0y = self.sqrt(self.f(P0x))
 
@@ -145,7 +144,7 @@ class HighOrderMap:
 
     def sqrt(self, x):
         """
-        Always pick the square root with 0 parity.
+        Always pick the even square root.
 
         x can be an int or element of F
         """
@@ -155,8 +154,11 @@ class HighOrderMap:
 
         assert x.is_square(), "Must be a square to find sqrt"
         y = x.sqrt(extend=False) # sage function sqrt
+
+        # ensure we pick the even sqrt
         if sgn0(y) == 1:
             y = -y
+
         return y
 
     def k3(self, t):
