@@ -153,7 +153,7 @@ class HighOrderMap:
         x = self.F(x)
 
         assert x.is_square(), "Must be a square to find sqrt"
-        y = x.sqrt(extend=False) # sage function sqrt
+        y = x.sqrt() # sage function sqrt
 
         # ensure we pick the even sqrt
         if sgn0(y) == 1:
