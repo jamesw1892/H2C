@@ -266,5 +266,21 @@ class HighOrderMap:
 
         return self.k6(u1, s1) - self.k6(u2, s2)
 
+    def uniform(self, u1, s1, u2, s2):
+        """
+        Return a uniform high-order curve point from elements u1, u2 in F and
+        binary digits s1, s2.
+
+        u1 and u2 can already be an element of F or integers.
+
+        This uses the version of K.5 which uses K.6 with K.4
+        """
+
+        P = self.k5(u1, s1, u2, s2)
+        if self.h * P == self.identity:
+            return self.P2
+        else:
+            return P
+
     def verifyDelta(self, delta):
         assert not delta.is_square(), "Delta is a square in F!"
