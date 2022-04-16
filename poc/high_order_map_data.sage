@@ -45,11 +45,11 @@ following curves:
 import sys
 
 try:
-    from sagelib.high_order_map import HighOrderMap
+    from sagelib.high_order_map import HighOrderMap, IsoHighOrderMap
     from sagelib.suite_p256 import p256_p, p256_A, p256_B
     from sagelib.suite_p384 import p384_p, p384_A, p384_B
     from sagelib.suite_p521 import p521_p, p521_A, p521_B
-    from sagelib.suite_secp256k1 import secp256k1_p, secp256k1_A, secp256k1_B
+    from sagelib.suite_secp256k1 import secp256k1_p, Ap as secp256k1_a_iso, Bp as secp256k1_b_iso, iso_map as secp256k1_iso_map
 except ImportError as e:
     sys.exit("Error loading preprocessed sage files. Try running `make clean pyfiles`. Full error: " + e)
 
@@ -154,8 +154,8 @@ wei448_q = 2^448 - 2^224 - 1
 wei448_a = 484559149530404593699549205258669689569094240458212040187660132787074885444487181790930922465784363953392589641229091574035657199637535
 wei448_b = 269199527516891440944194002921483160871719022476784466770922295992819380802492878772739401369880202196329216467349495319191685664513904
 wei448_h = 4
-wei448_delta = -1
 wei448_P0x = 18
+wei448_delta = -1
 wei448_map = HighOrderMap(wei448_q, wei448_a, wei448_b, wei448_h, wei448_P0x, None, wei448_delta)
 
 wei448_1_a = 1
@@ -168,4 +168,7 @@ wei448_n3_b = 699937686810001500848336699619005330673833355924944987095346934649
 wei448_n3_P0x = 8
 wei448_n3_map = HighOrderMap(wei448_q, wei448_n3_a, wei448_n3_b, wei448_h, wei448_n3_P0x, None, wei448_delta)
 
-# secp256k1_m_map = HighOrderMap(secp256k1_p, secp256k1_A, secp256k1_B, -1, 0, None) # A = 0, need to use isogeny
+secp256k1_h = 1
+secp256k1_P0x = 0
+secp256k1_delta = -1
+secp256k1_map = IsoHighOrderMap(secp256k1_iso_map, secp256k1_p, secp256k1_a_iso, secp256k1_b_iso, secp256k1_h, secp256k1_P0x, None, secp256k1_delta)
