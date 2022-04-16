@@ -168,6 +168,7 @@ wei448_n3_b = 699937686810001500848336699619005330673833355924944987095346934649
 wei448_n3_P0x = 8
 wei448_n3_map = HighOrderMap(wei448_q, wei448_n3_a, wei448_n3_b, wei448_h, wei448_n3_P0x, None, wei448_delta)
 
+# secp256k1 - see SEC 2
 secp256k1_h = 1
 secp256k1_P0x = 0
 secp256k1_delta = -1
