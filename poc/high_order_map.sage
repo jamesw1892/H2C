@@ -26,8 +26,7 @@ These require the domain parameters to be non-zero, however note 2 in appendix
 K.3.1 states that it is often possible to find an isogenous curve with non-zero
 domain parameters over the same field F. Then non-square elements of F can be
 mapped this isogenous curve and further mapped to the original curve using the
-isogeny.
-TODO: Look at isogeny maps in H2C appendix E
+isogeny. This is what the IsoHighOrderMap class does.
 
 The parity function in appendix H is also mentioned which assigns a sign to
 elements of F - returns 1 iff the element is "negative" in F (so par(0) = 0).
