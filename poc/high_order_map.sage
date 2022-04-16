@@ -289,3 +289,28 @@ class HighOrderMap:
 
     def verifyDelta(self, delta):
         assert not delta.is_square(), "Delta is a square in F!"
+
+class IsoHighOrderMap(HighOrderMap):
+    """
+    Builds on HighOrderMap for curves with a = 0 or b = 0. If such curves have
+    an isogenous curve with a != 0 and b != 0 then instantiate this class with
+    these a, b and where iso_map is the mapping from the isogenous curve to the
+    original curve.
+
+    The functions in this class wrap the functions in HighOrderMap where they
+    map the output point on the isogenous curve to the original curve using the
+    isogeny map
+    """
+    def __init__(self, iso_map, q: int, a_iso: int, b_iso: int, h: int, P0x: int, P0y: int=None, delta: int=None):
+        super().__init__(q, a_iso, b_iso, h, P0x, P0y, delta)
+        self.iso_map = iso_map
+    def k3(self, t):
+        return self.iso_map(super().k3(t))
+    def k4(self, t, s):
+        return self.iso_map(super().k4(t, s))
+    def k6(self, u, s):
+        return self.iso_map(super().k6(u, s))
+    def k5(self, u1, s1, u2, s2):
+        return self.iso_map(super().k5(u1, s1, u2, s2))
+    def uniform(self, u1, s1, u2, s2):
+        return self.iso_map(super().uniform(u1, s1, u2, s2))
