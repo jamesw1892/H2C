@@ -136,6 +136,11 @@ class HighOrderMap:
         Return a non-square element of the field
         """
 
+        # try -1 first as short to represent
+        n1 = self.F(-1)
+        if not n1.is_square():
+            return n1
+
         # about half are non-square so certainly exists
         # brute force
         for e in self.F:
