@@ -24,6 +24,7 @@ Sometimes P0 is g, the base point of the curve.
 These values are stored and the high-order map instances are created for the
 following curves:
 
+In Table 1 of Curve Representations:
 - NIST P-224
 - NIST P-256
 - NIST P-384
@@ -39,7 +40,25 @@ following curves:
 - Wei448
 - Wei448.1
 - Wei448.-3
-- secp256k1.m
+- secp256k1
+
+Not In Table 1 of Curve Representations:
+- NIST P-192
+- Brainpool P-160 R1
+- Brainpool P-192 R1
+- BLS12-381 G1
+- BLS12-381 G2*
+- secp192k1**
+- secp192r1
+- secp224k1**
+- secp224r1
+- secp256r1
+- secp384r1
+- secp521r1
+
+*  Has unusual field construction
+** Have a = 0 so require an isogenous curve, but we have not currently found one
+Therefore we have not fully defined these curves
 """
 
 import sys
@@ -50,8 +69,14 @@ try:
     from sagelib.suite_p384 import p384_p, p384_A, p384_B
     from sagelib.suite_p521 import p521_p, p521_A, p521_B
     from sagelib.suite_secp256k1 import secp256k1_p, Ap as secp256k1_a_iso, Bp as secp256k1_b_iso, iso_map as secp256k1_iso_map
+    from sagelib.suite_bls12381g1 import p as bls12381g1_p, Ap as bls12381g1_a_iso, Bp as bls12381g1_b_iso, h_eff as bls12381g1_h, iso_map as bls12381g1_iso_map
+    from sagelib.suite_bls12381g2 import p as bls12381g2_p, Ap as bls12381g2_a_iso, Bp as bls12381g2_b_iso, h_eff as bls12381g2_h, iso_map as bls12381g2_iso_map
 except ImportError as e:
     sys.exit("Error loading preprocessed sage files. Try running `make clean pyfiles`. Full error: " + e)
+
+###############################################################################
+##################### In Table 1 of Curve Representations #####################
+###############################################################################
 
 # NIST P-224 - see FIPS-186-4
 p224_q = 26959946667150639794667015087019630673557916260026308143510066298881
@@ -173,3 +198,122 @@ secp256k1_h = 1
 secp256k1_P0x = 0
 secp256k1_delta = -1
 secp256k1_map = IsoHighOrderMap(secp256k1_iso_map, secp256k1_p, secp256k1_a_iso, secp256k1_b_iso, secp256k1_h, secp256k1_P0x, None, secp256k1_delta)
+
+###############################################################################
+################### Not In Table 1 of Curve Representations ###################
+###############################################################################
+
+# NIST P-192 - see FIPS-186-4
+p192_q = 6277101735386680763835789423207666416083908700390324961279
+p192_a = -3
+p192_b = 0x64210519e59c80e70fa7e9ab72243049feb8deecc146b9b1
+p192_h = 1
+p192_delta = -1
+p192_gx = 0x188da80eb03090f67cbf20eb43a18800f4ff0afd82ff1012 # TODO: is this suitable for P0?
+p192_gy = 0x07192b95ffc8da78631011ed6b24cdd573f977a11e794811 # TODO: is this suitable for P0?
+p192_map = HighOrderMap(p192_q, p192_a, p192_b, p192_h, p192_gx, p192_gy, p192_delta)
+
+# Brainpool P-160 R1 - see RFC 5639
+b160_q = 0xE95E4A5F737059DC60DFC7AD95B3D8139515620F
+b160_a = 0x340E7BE2A280EB74E2BE61BADA745D97E8F7C300
+b160_b = 0x1E589A8595423412134FAA2DBDEC95C8D8675E58
+b160_h = 1
+b160_gx = 0xBED5AF16EA3F6A4F62938C4631EB5AF7BDBCDBC3 # TODO: is this suitable for P0?
+b160_gy = 0x1667CB477A1A8EC338F94741669C976316DA6321 # TODO: is this suitable for P0?
+b160_delta = -1
+b160_map = HighOrderMap(b160_q, b160_a, b160_b, b160_h, b160_gx, b160_gy, b160_delta)
+
+# Brainpool P-192 R1 - see RFC 5639
+b192_q = 0xC302F41D932A36CDA7A3463093D18DB78FCE476DE1A86297
+b192_a = 0x6A91174076B1E0E19C39C031FE8685C1CAE040E5C69A28EF
+b192_b = 0x469A28EF7C28CCA3DC721D044F4496BCCA7EF4146FBF25C9
+b192_h = 1
+b192_gx = 0xC0A0647EAAB6A48753B033C56CB0F0900A2F5C4853375FD6 # TODO: is this suitable for P0?
+b192_gy = 0x14B690866ABD5BB88B5F4828C1490002E6773FA2FA299B8F # TODO: is this suitable for P0?
+b192_delta = -1
+b192_map = HighOrderMap(b192_q, b192_a, b192_b, b192_h, b192_gx, b192_gy, b192_delta)
+
+# BLS12-381 G1 - see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-pairing-friendly-curves-10
+bls12381g1_P0x = 0 # TODO: is this suitable for P0?
+bls12381g1_P0y = 0 # TODO: is this suitable for P0?
+bls12381g1_delta = -1
+bls12381g1_map = IsoHighOrderMap(bls12381g1_iso_map, bls12381g1_p, bls12381g1_a_iso, bls12381g1_b_iso, bls12381g1_h, bls12381g1_P0x, bls12381g1_P0y, bls12381g1_delta)
+
+# BLS12-381 G2 - see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-pairing-friendly-curves-10
+# bls12381g2_P0x = 0 # TODO: is this suitable for P0?
+# bls12381g2_P0y = 0 # TODO: is this suitable for P0?
+# bls12381g2_delta = None
+# bls12381g2_map = IsoHighOrderMap(bls12381g2_iso_map, bls12381g2_p, bls12381g2_a_iso, bls12381g2_b_iso, bls12381g2_h, bls12381g2_P0x, bls12381g2_P0y, bls12381g2_delta)
+# the field is constructed from p^2 with a modulus
+
+# secp192k1 - see SEC 2 - TODO: Find isogenous curve
+# secp192k1_iso_map
+secp192k1_q = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFEE37
+# secp192k1_a_iso
+# secp192k1_b_iso
+secp192k1_h = 1
+secp192k1_gx = 0xDB4FF10EC057E9AE26B07D0280B7F4341DA5D1B1EAE06C7D # TODO: is this suitable for P0?
+secp192k1_gy = 0x9B2F2F6D9C5628A7844163D015BE86344082AA88D95E2F9D # TODO: is this suitable for P0?
+secp192k1_delta = -1
+# secp192k1_map = IsoHighOrderMap(secp192k1_iso_map, secp192k1_q, secp192k1_a_iso, secp192k1_b_iso, secp192k1_h, secp192k1_gx, secp192k1_gy, secp192k1_delta)
+
+# secp192r1 - see SEC 2
+secp192r1_q = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFFFFFFFFFF
+secp192r1_a = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFFFFFFFFFC
+secp192r1_b = 0x64210519E59C80E70FA7E9AB72243049FEB8DEECC146B9B1
+secp192r1_h = 1
+secp192r1_gx = 0x188DA80EB03090F67CBF20EB43A18800F4FF0AFD82FF1012 # TODO: is this suitable for P0?
+secp192r1_gy = 0x07192B95FFC8DA78631011ED6B24CDD573F977A11E794811 # TODO: is this suitable for P0?
+secp192r1_delta = -1
+secp192r1_map = HighOrderMap(secp192r1_q, secp192r1_a, secp192r1_b, secp192r1_h, secp192r1_gx, secp192r1_gy, secp192r1_delta)
+
+# secp224k1 - see SEC 2 - TODO: Find isogenous curve
+# secp224k1_iso_map
+secp224k1_q = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFE56D
+# secp224k1_a_iso
+# secp224k1_b_iso
+secp224k1_h = 1
+secp224k1_gx = 0xA1455B334DF099DF30FC28A169A467E9E47075A90F7E650EB6B7A45C # TODO: is this suitable for P0?
+secp224k1_gy = 0x7E089FED7FBA344282CAFBD6F7E319F7C0B0BD59E2CA4BDB556D61A5 # TODO: is this suitable for P0?
+secp224k1_delta = 2
+# secp224k1_map = IsoHighOrderMap(secp224k1_iso_map, secp224k1_q, secp224k1_a_iso, secp224k1_b_iso, secp224k1_h, secp224k1_gx, secp224k1_gy, secp224k1_delta)
+
+# secp224r1 - see SEC 2
+secp224r1_q = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001
+secp224r1_a = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFE
+secp224r1_b = 0xB4050A850C04B3ABF54132565044B0B7D7BFD8BA270B39432355FFB4
+secp224r1_h = 1
+secp224r1_gx = 0xB70E0CBD6BB4BF7F321390B94A03C1D356C21122343280D6115C1D21 # TODO: is this suitable for P0?
+secp224r1_gy = 0xBD376388B5F723FB4C22DFE6CD4375A05A07476444D5819985007E34 # TODO: is this suitable for P0?
+secp224r1_delta = 11
+secp224r1_map = HighOrderMap(secp224r1_q, secp224r1_a, secp224r1_b, secp224r1_h, secp224r1_gx, secp224r1_gy, secp224r1_delta)
+
+# secp256r1 - see SEC 2
+secp256r1_q = 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF
+secp256r1_a = 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC
+secp256r1_b = 0x5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B
+secp256r1_h = 1
+secp256r1_gx = 0x6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296 # TODO: is this suitable for P0?
+secp256r1_gy = 0x4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5 # TODO: is this suitable for P0?
+secp256r1_delta = -1
+secp256r1_map = HighOrderMap(secp256r1_q, secp256r1_a, secp256r1_b, secp256r1_h, secp256r1_gx, secp256r1_gy, secp256r1_delta)
+
+# secp384r1 - see SEC 2
+secp384r1_q = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFF0000000000000000FFFFFFFF
+secp384r1_a = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFF0000000000000000FFFFFFFC
+secp384r1_b = 0xB3312FA7E23EE7E4988E056BE3F82D19181D9C6EFE8141120314088F5013875AC656398D8A2ED19D2A85C8EDD3EC2AEF
+secp384r1_h = 1
+secp384r1_gx = 0xAA87CA22BE8B05378EB1C71EF320AD746E1D3B628BA79B9859F741E082542A385502F25DBF55296C3A545E3872760AB7 # TODO: is this suitable for P0?
+secp384r1_gy = 0xAA87CA22BE8B05378EB1C71EF320AD746E1D3B628BA79B9859F741E082542A385502F25DBF55296C3A545E3872760AB7 # TODO: is this suitable for P0?
+secp384r1_delta = -1
+secp384r1_map = HighOrderMap(secp384r1_q, secp384r1_a, secp384r1_b, secp384r1_h, secp384r1_gx, secp384r1_gy, secp384r1_delta)
+
+# secp521r1 - see SEC 2
+secp521r1_q = 0x01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+secp521r1_a = 0x01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC
+secp521r1_b = 0x0051953EB9618E1C9A1F929A21A0B68540EEA2DA725B99B315F3B8B489918EF109E156193951EC7E937B1652C0BD3BB1BF073573DF883D2C34F1EF451FD46B503F00
+secp521r1_h = 1
+secp521r1_gx = 0x00C6858E06B70404E9CD9E3ECB662395B4429C648139053FB521F828AF606B4D3DBAA14B5E77EFE75928FE1DC127A2FFA8DE3348B3C1856A429BF97E7E31C2E5BD66 # TODO: is this suitable for P0?
+secp521r1_gy = 0x011839296A789A3BC0045C8A5FB42C7D1BD998F54449579B446817AFBD17273E662C97EE72995EF42640C550B9013FAD0761353C7086A272C24088BE94769FD16650 # TODO: is this suitable for P0?
+secp521r1_delta = -1
+secp521r1_map = HighOrderMap(secp521r1_q, secp521r1_a, secp521r1_b, secp521r1_h, secp521r1_gx, secp521r1_gy, secp521r1_delta)
