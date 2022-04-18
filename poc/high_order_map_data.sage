@@ -46,19 +46,21 @@ Not In Table 1 of Curve Representations:
 - NIST P-192
 - Brainpool P-160 R1
 - Brainpool P-192 R1
-- BLS12-381 G1
-- BLS12-381 G2*
-- secp192k1**
+- BLS12-381 G1 (1)
+- BLS12-381 G2 (1, 2)
+- secp192k1 (3)
 - secp192r1
-- secp224k1**
+- secp224k1 (3)
 - secp224r1
 - secp256r1
 - secp384r1
 - secp521r1
 
-*  Has unusual field construction
-** Have a = 0 so require an isogenous curve, but we have not currently found one
-Therefore we have not fully defined these curves
+(1) Haven't found base point
+(2) Has unusual field construction
+(3) Have a = 0 so require an isogenous curve, but we have not currently found one
+
+Therefore we have not fully defined or instantiated these curves
 """
 
 import sys
@@ -234,17 +236,16 @@ b192_delta = -1
 b192_map = HighOrderMap(b192_q, b192_a, b192_b, b192_h, b192_gx, b192_gy, b192_delta)
 
 # BLS12-381 G1 - see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-pairing-friendly-curves-10
-bls12381g1_P0x = 0 # TODO: is this suitable for P0?
-bls12381g1_P0y = 0 # TODO: is this suitable for P0?
+# bls12381g1_P0x = 0 # TODO: find
+# bls12381g1_P0y = 0 # TODO: find
 bls12381g1_delta = -1
-bls12381g1_map = IsoHighOrderMap(bls12381g1_iso_map, bls12381g1_p, bls12381g1_a_iso, bls12381g1_b_iso, bls12381g1_h, bls12381g1_P0x, bls12381g1_P0y, bls12381g1_delta)
+# bls12381g1_map = IsoHighOrderMap(bls12381g1_iso_map, bls12381g1_p, bls12381g1_a_iso, bls12381g1_b_iso, bls12381g1_h, bls12381g1_P0x, bls12381g1_P0y, bls12381g1_delta)
 
 # BLS12-381 G2 - see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-pairing-friendly-curves-10
-# bls12381g2_P0x = 0 # TODO: is this suitable for P0?
-# bls12381g2_P0y = 0 # TODO: is this suitable for P0?
-# bls12381g2_delta = None
+# bls12381g2_P0x = 0 # TODO: find
+# bls12381g2_P0y = 0 # TODO: find
+# bls12381g2_delta = None # TODO: find
 # bls12381g2_map = IsoHighOrderMap(bls12381g2_iso_map, bls12381g2_p, bls12381g2_a_iso, bls12381g2_b_iso, bls12381g2_h, bls12381g2_P0x, bls12381g2_P0y, bls12381g2_delta)
-# the field is constructed from p^2 with a modulus
 
 # secp192k1 - see SEC 2 - TODO: Find isogenous curve
 # secp192k1_iso_map
