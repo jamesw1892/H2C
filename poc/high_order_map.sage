@@ -127,7 +127,7 @@ class HighOrderMap:
         self.P0y = self.F(P0y)
         self.P0 = self.curve(self.P0x, self.P0y)
 
-        # for now set all equal, TODO: potentially change
+        # by default, set P2 and P1 to P0
         self.P2 = self.P1 = self.P0
 
     def pickDelta(self):
@@ -287,6 +287,13 @@ class HighOrderMap:
             return P
 
     def verifyDelta(self, delta):
+        """
+        Check that the given delta is a non-square element of the field.
+        delta can be an integer or already an element of the field.
+        If delta is a square then AssertionError is thrown.
+        """
+
+        delta = self.F(delta)
         assert not delta.is_square(), "Delta is a square in F!"
 
 class IsoHighOrderMap(HighOrderMap):
@@ -300,7 +307,8 @@ class IsoHighOrderMap(HighOrderMap):
     map the output point on the isogenous curve to the original curve using the
     isogeny map
     """
-    def __init__(self, iso_map, q: int, a_iso: int, b_iso: int, h: int, P0x: int, P0y: int=None, delta: int=None):
+    def __init__(self, iso_map, q: int, a_iso: int, b_iso: int, h: int,
+                 P0x: int, P0y: int = None, delta: int = None):
         super().__init__(q, a_iso, b_iso, h, P0x, P0y, delta)
         self.iso_map = iso_map
     def k3(self, t):
